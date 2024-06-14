@@ -1,0 +1,46 @@
+use std::io::{BufRead, Write};
+use std::io;
+
+fn main() {
+
+    println!("Enter the webpage's local path:");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).expect("Failed to read input.");
+    let os_string: std::ffi::OsString = input.trim().trim_matches('"').into();
+    println!("{:?}", os_string);
+
+
+    let url = "127.0.0.1:9999";
+    let url_plus_protocol = "http://127.0.0.1:9999";
+    
+    if let Err(err) = open::that(url_plus_protocol) {
+        eprintln!("Error opening URL: {}", err);
+    }
+
+    let listener = std::net::TcpListener::bind(url).unwrap();
+    for mut stream in listener.incoming().flatten(){
+        let mut rdr = std::io::BufReader::new(&mut stream);
+        let mut l  = String::new(); 
+        let _ = rdr.read_line(&mut l).unwrap(); 
+        match l.trim().split(' ').collect::<Vec<_>>().as_slice() {
+            ["GET", resource, "HTTP/1.1"] => {
+                 loop
+                 {
+                     let mut l  = String::new();
+                     rdr.read_line(&mut l).unwrap();
+                     if l.trim().is_empty() {break; }   
+                 }
+                 let mut p = std::path::PathBuf::from(os_string.clone()); 
+                 p.push(resource.trim_start_matches("/"));
+                 if resource.ends_with('/') { p.push("index.html");}
+
+                 println!("requested: {}", p.display());
+
+                 let _ = stream.write_all(b"HTTP/1.1 200 OK \r\n\r\n").unwrap();
+                 let _ = stream.write_all(&std::fs::read(p).unwrap()).unwrap();
+            }
+            _ => todo!()
+        }
+
+    }
+} 
