@@ -1,1 +1,1 @@
-Basic Rust HTTP server.
+Basic Rust development local HTTP server.
